@@ -12,17 +12,17 @@ import GHC.Generics
 import GHC.TypeLits
 
 -- | TypeLits have no value-level version, so they are represented by instances of this data family.
+-- It's a good idea to parameterize your promoted types on literal types like so: @MyType str@
+--
+-- This way you can promote a @MyType Symbol@ and demote it into a @MyType (Demoted Symbol)@.
 data family Demoted a
-
--- It's a good idea to parameterize your promoted types like so: MyType str
--- This way you can promote a MyType Symbol and demote it into a MyType (Demoted Symbol) and use the same data type.
 newtype instance Demoted Symbol = DemotedSymbol { getSymbol :: String }
   deriving (Eq, Ord, Show)
 
 newtype instance Demoted Nat = DemotedNat { getNat :: Integer }
   deriving (Eq, Ord, Show)
 
--- | The class of types that can be recovered ("demoted") from `Type`s.
+-- | The class of types that can be recovered ("demoted") from `Type`s. This class can be automatically derived for any promotable `Generic` type.
 class Demotable a where
   demote' :: Type -> Maybe a
   default demote' :: (Generic a, DemoteG (Rep a)) => Type -> Maybe a
@@ -94,3 +94,4 @@ deriving instance Demotable Bool
 deriving instance ( Demotable a, Demotable b ) => Demotable ( a, b )
 deriving instance ( Demotable a, Demotable b, Demotable c ) => Demotable ( a, b, c )
 deriving instance Demotable a => Demotable (Maybe a)
+deriving instance ( Demotable a, Demotable b ) => Demotable (Either a b)
