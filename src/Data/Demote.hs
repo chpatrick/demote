@@ -1,8 +1,6 @@
-{-# LANGUAGE FlexibleInstances, TypeOperators, PatternSynonyms, LambdaCase, TupleSections, DefaultSignatures, FlexibleContexts, DeriveAnyClass, StandaloneDeriving, ScopedTypeVariables #-}
-
 module Data.Demote
   ( Demotable(..), demote
-  , DemotedSymbol(..), DemotedNat(..)
+  , Demoted(..)
   ) where
 
 import Control.Applicative
@@ -11,22 +9,26 @@ import Data.Typeable
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import GHC.Generics
+import GHC.TypeLits
 
--- Demoted versions of TypeLits.
+-- | TypeLits have no value-level version, so they are represented by instances of this data family.
+data family Demoted a
+
 -- It's a good idea to parameterize your promoted types like so: MyType str
--- This way you can promote a MyType Symbol and demote it into a MyType DemotedSymbol and use the same data type.
-newtype DemotedSymbol = DemotedSymbol { getSymbol :: String }
+-- This way you can promote a MyType Symbol and demote it into a MyType (Demoted Symbol) and use the same data type.
+newtype instance Demoted Symbol = DemotedSymbol { getSymbol :: String }
   deriving (Eq, Ord, Show)
 
-newtype DemotedNat = DemotedNat { getNat :: Integer }
+newtype instance Demoted Nat = DemotedNat { getNat :: Integer }
   deriving (Eq, Ord, Show)
 
+-- | The class of types that can be recovered ("demoted") from `Type`s.
 class Demotable a where
-  -- | Demote a Type that does not contain signatures.
   demote' :: Type -> Maybe a
   default demote' :: (Generic a, DemoteG (Rep a)) => Type -> Maybe a
   demote' = fmap to . demoteG
 
+-- | Parse a `Demotable` type from its `Type` representation.
 demote :: Demotable a => Type -> Maybe a
 demote = demote' . desig
   where
@@ -77,12 +79,12 @@ instance Demotable a => Demotable [ a ] where
     PromotedConsT `AppT` x `AppT` xs -> (:) <$> demote' x <*> demote' xs
     _ -> Nothing
 
-instance Demotable DemotedSymbol where
+instance Demotable (Demoted Symbol) where
   demote' = \case
     LitT (StrTyLit sym) -> Just (DemotedSymbol sym)
     _ -> Nothing
 
-instance Demotable DemotedNat where
+instance Demotable (Demoted Nat) where
   demote' = \case
     LitT (NumTyLit nat) -> Just (DemotedNat nat)
     _ -> Nothing

@@ -15,7 +15,7 @@ cabal-version:       >=1.10
 library
   exposed-modules:     Data.Demote
   -- other-modules:       
-  extensions:           TemplateHaskell,
+  extensions:          TemplateHaskell,
                        DeriveGeneric,
                        DeriveAnyClass,
                        DataKinds,
@@ -27,7 +27,8 @@ library
                        DefaultSignatures,
                        FlexibleContexts,
                        StandaloneDeriving,
-                       ScopedTypeVariables
+                       ScopedTypeVariables,
+                       TypeFamilies
   build-depends:       base >=4.8 && <4.9, template-haskell >=2.10, mtl >=2.2
   hs-source-dirs:      src/
   default-language:    Haskell2010
