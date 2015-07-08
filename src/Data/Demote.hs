@@ -55,8 +55,7 @@ instance DemoteF U1 where
 
 instance Demotable a => DemoteF (S1 c (Rec0 a)) where
   demoteF = StateT $ \case
-    t' `AppT` vt -> do
-      return ( (M1 . K1) <$> demote' vt, t' )
+    t' `AppT` vt -> Just ( (M1 . K1) <$> demote' vt, t' )
     _ -> Nothing
 
 instance (Constructor c, DemoteF f) => DemoteG (C1 c f) where
