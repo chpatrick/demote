@@ -14,7 +14,6 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.Demote
-  -- other-modules:       
   extensions:          TemplateHaskell,
                        DeriveGeneric,
                        DeriveAnyClass,

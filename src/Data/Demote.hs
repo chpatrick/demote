@@ -4,7 +4,7 @@ module Data.Demote
   ) where
 
 import Control.Applicative
-import Control.Monad.State.Strict
+import Control.Monad.State
 import Data.Typeable
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -42,30 +42,28 @@ class DemoteG a where
   demoteG :: Type -> Maybe (a p)
 
 class DemoteF a where
-  demoteF :: StateT Type Maybe (a p)
+  demoteF :: StateT Type Maybe (Maybe (a p))
 
 instance (DemoteF f, DemoteF g) => DemoteF (f :*: g) where
   demoteF = do
     r <- demoteF
     l <- demoteF
-    return $ l :*: r
+    return $ liftA2 (:*:) l r
 
 instance DemoteF U1 where
-  demoteF = return U1
+  demoteF = return $ Just U1
 
 instance Demotable a => DemoteF (S1 c (Rec0 a)) where
   demoteF = StateT $ \case
     t' `AppT` vt -> do
-      v <- demote' vt
-      return ( M1 $ K1 v, t' )
+      return ( (M1 . K1) <$> demote' vt, t' )
     _ -> Nothing
 
 instance (Constructor c, DemoteF f) => DemoteG (C1 c f) where
   demoteG t = do
-    ( x, ConT (Name (OccName occ) _) ) <- runStateT demoteF t
-    case M1 x of
-      r | occ == conName r -> Just r
-      _ -> Nothing
+    ( m'x, ConT (Name (OccName occ) _) ) <- runStateT demoteF t
+    guard (occ == conName (undefined :: C1 c f p))
+    M1 <$> m'x
 
 instance (DemoteG f, DemoteG g) => DemoteG (f :+: g) where
   demoteG t = L1 <$> demoteG t <|> R1 <$> demoteG t
